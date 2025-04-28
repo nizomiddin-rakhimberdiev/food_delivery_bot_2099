@@ -11,7 +11,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id VARCHAR(20) NOT NULL UNIQUE,
-                phone VARCHAR(20) NOT NULL,
+                phone VARCHAR(20) NOT NULL
             );
         ''')
         self.connection.commit()

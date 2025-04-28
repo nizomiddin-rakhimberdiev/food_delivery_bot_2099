@@ -1,19 +1,31 @@
 from aiogram import Bot, Dispatcher, types, F
 import asyncio
 from database import Database
+from aiogram.fsm.context import FSMContext
+from states import RegisterState
+from default_keyboards import phone_btn, menu_keyboard
 
 bot = Bot(token='7389508313:AAEmVvDmFfpcijZCXMt7brMRnNHLQnWhd9g')
 dp = Dispatcher()
 db = Database()
 
 @dp.message(F.text=='/start')
-async def start(message: types.Message):
+async def start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     user = db.check_user(user_id)
     if user:
-        await message.answer('Hello, I am a bot!')
+        await message.answer('Hello, Welcome to delivery bot!', reply_markup=menu_keyboard)
     else:
-        pass
+        await message.answer("Iltimos ro'yxatdan o'tish uchun telefon raqamingizni kiriting: ", reply_markup=phone_btn)
+        await state.set_state(RegisterState.phone)
+
+@dp.message(RegisterState.phone)
+async def register_handler(message: types.Message, state: FSMContext):
+    phone = message.contact.phone_number
+    user_id = message.from_user.id
+    db.add_user(user_id, phone)
+    await state.clear()
+    await message.answer("Siz muvaffaqiyatli ro'yxatdan o'tdingiz, Tabriklaymiz", reply_markup=menu_keyboard)
 
 
 async def main():
