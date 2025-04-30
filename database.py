@@ -11,7 +11,27 @@ class Database:
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id VARCHAR(20) NOT NULL UNIQUE,
-                phone VARCHAR(20) NOT NULL
+                phone VARCHAR(20) NOT NULL,
+                role VARCHAR(50) DEFAULT "user"
+            );
+            ''')
+        self.cursor.execute('''
+                            
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(100) UNIQUE                         
+            );
+        ''')
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(100) UNIQUE,
+                description TEXT,
+                price INTEGER,
+                status INTEGER DEFAULT 1,
+                image TEXT,
+                category_id INTEGER,
+                FOREIGN KEY (category_id) REFERENCES categories(id)                 
             );
         ''')
         self.connection.commit()
@@ -25,4 +45,9 @@ class Database:
     def check_user(self, user_id):
         self.cursor.execute('''SELECT * FROM users WHERE user_id = ?;''', (user_id,))
         return self.cursor.fetchone() is not None
+    
+    def change_role(self, role, phone):
+        self.cursor.execute("UPDATE users SET role=? WHERE phone=?", (role, phone))
+        self.connection.commit()
+
 

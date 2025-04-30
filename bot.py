@@ -3,21 +3,27 @@ import asyncio
 from database import Database
 from aiogram.fsm.context import FSMContext
 from states import RegisterState
-from default_keyboards import phone_btn, menu_keyboard
+from default_keyboards import phone_btn, menu_keyboard, admin_keyboard
 
-bot = Bot(token='7389508313:AAEmVvDmFfpcijZCXMt7brMRnNHLQnWhd9g')
+bot = Bot(token='7389508313:AAFFWy56tpVt0GpnD5YzI0pVgyNN-P2rLyg')
 dp = Dispatcher()
 db = Database()
 
+SUPER_ADMIN_ID = 726130790
+
 @dp.message(F.text=='/start')
 async def start(message: types.Message, state: FSMContext):
+
     user_id = message.from_user.id
-    user = db.check_user(user_id)
-    if user:
-        await message.answer('Hello, Welcome to delivery bot!', reply_markup=menu_keyboard)
+    if user_id == SUPER_ADMIN_ID:
+        await message.answer("Bos nima gap? xoxlagan ishingni qil", reply_markup=admin_keyboard)
     else:
-        await message.answer("Iltimos ro'yxatdan o'tish uchun telefon raqamingizni kiriting: ", reply_markup=phone_btn)
-        await state.set_state(RegisterState.phone)
+        user = db.check_user(user_id)
+        if user:
+            await message.answer('Hello, Welcome to delivery bot!', reply_markup=menu_keyboard)
+        else:
+            await message.answer("Iltimos ro'yxatdan o'tish uchun telefon raqamingizni kiriting: ", reply_markup=phone_btn)
+            await state.set_state(RegisterState.phone)
 
 @dp.message(RegisterState.phone)
 async def register_handler(message: types.Message, state: FSMContext):
