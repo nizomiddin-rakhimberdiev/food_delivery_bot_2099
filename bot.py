@@ -15,7 +15,7 @@ SUPER_ADMIN_ID = 726130790
 async def start(message: types.Message, state: FSMContext):
 
     user_id = message.from_user.id
-    if user_id == SUPER_ADMIN_ID:
+    if user_id == SUPER_ADMIN_ID or db.check_admin(user_id):
         await message.answer("Bos nima gap? xoxlagan ishingni qil", reply_markup=admin_keyboard)
     else:
         user = db.check_user(user_id)

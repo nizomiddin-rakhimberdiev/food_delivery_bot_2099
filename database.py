@@ -50,4 +50,8 @@ class Database:
         self.cursor.execute("UPDATE users SET role=? WHERE phone=?", (role, phone))
         self.connection.commit()
 
+    def check_admin(self, user_id):
+        self.cursor.execute('''SELECT * FROM users WHERE user_id = ? AND role = "admin";''', (user_id,))
+        return self.cursor.fetchone() is not None
+
 
