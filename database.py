@@ -54,4 +54,16 @@ class Database:
         self.cursor.execute('''SELECT * FROM users WHERE user_id = ? AND role = "admin";''', (user_id,))
         return self.cursor.fetchone() is not None
 
+    def add_category(self, name):
+        try:
+            self.cursor.execute('''INSERT INTO categories (name) VALUES (?);''', (name,))
+            self.connection.commit()
+            return "Category added successfully."
+        except sqlite3.IntegrityError:
+            return f"Category {name} already exists in the database."
+
+    def get_categories(self):
+        self.cursor.execute('''SELECT * FROM categories;''')
+        return self.cursor.fetchall()
+    
 

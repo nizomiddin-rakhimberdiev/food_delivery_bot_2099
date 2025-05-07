@@ -20,6 +20,7 @@ menu_keyboard = ReplyKeyboardMarkup(
 admin_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📋 add prod"), KeyboardButton(text="🛍 orders")],
+        [KeyboardButton(text="📋 add category"), KeyboardButton(text="🛍 categories")],
         [KeyboardButton(text="⚙️ edit prod"), KeyboardButton(text="🛍 get prod")],
         [KeyboardButton(text="👤 add admins"), KeyboardButton(text="📦 curers")],
         [KeyboardButton(text="👤 admins"), KeyboardButton(text="🪙Finance")],
