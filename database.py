@@ -65,5 +65,11 @@ class Database:
     def get_categories(self):
         self.cursor.execute('''SELECT * FROM categories;''')
         return self.cursor.fetchall()
+
+    def add_product(self, name, description, price, image, category_id):
+        self.cursor.execute("""
+        INSERT INTO products (name, description, price, image, category_id)
+        VALUES (?, ?, ?, ?, ?)""", (name, description, price, image, category_id))
+        self.connection.commit()
     
 

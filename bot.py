@@ -2,11 +2,12 @@ from aiogram import Bot, Dispatcher, types, F
 import asyncio
 from database import Database
 from aiogram.fsm.context import FSMContext
-from states import RegisterState, AddCategoryState
+from states import RegisterState, AddCategoryState, AddProductState
 from default_keyboards import phone_btn, menu_keyboard, admin_keyboard
 from inline_keyboards import get_categories_btn
 
 bot = Bot(token='6910861045:AAHv4cNziEbEa-VkgvJRmr3Qr59JNzXfjAQ')
+
 dp = Dispatcher()
 db = Database()
 
@@ -61,6 +62,59 @@ async def categories_handler(message: types.Message):
             await message.answer("Hozirda hech qanday kategoriya mavjud emas.")
     else:
         await message.answer("Sizda buni qilish huquqi yo'q")
+
+
+@dp.message(F.text == '📋 add prod')
+async def add_product_handler(message: types.Message, state: FSMContext):
+    await message.answer("Maxsulot nomini kiriting: ")
+    await state.set_state(AddProductState.name)
+
+
+@dp.message(AddProductState.name)
+async def product_name_handler(message: types.Message, state: FSMContext):
+    product_name = message.text
+    await state.update_data(name=product_name)
+    await message.answer("Maxsulot haqida to'liq ma'lumot kiriting: ")
+    await state.set_state(AddProductState.description)
+
+
+@dp.message(AddProductState.description)
+async def product_description_handler(message: types.Message, state: FSMContext):
+    product_description = message.text
+    await state.update_data(description=product_description)
+    await message.answer("Maxsulot narxini kiriting: ")
+    await state.set_state(AddProductState.price)
+
+
+@dp.message(AddProductState.price)
+async def product_price_handler(message: types.Message, state: FSMContext):
+    product_price = message.text
+    await state.update_data(price=product_price)
+    await message.answer("Maxsulot rasmini yuboring: ")
+    await state.set_state(AddProductState.image)
+
+
+@dp.message(AddProductState.image)
+async def product_photo_handler(message: types.Message, state: FSMContext):
+    photo = message.photo[-1].file_id
+    await state.update_data(image=photo)
+    await message.answer("Maxsulot kategoriyasini tanlng: ", reply_markup=get_categories_btn())
+    await state.set_state(AddProductState.category)
+
+
+@dp.callback_query(AddProductState.category, F.data.startswith('category'))
+async def product_category_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    category_id = callback_query.data.split('_')[1]
+    data = await state.get_data()
+    name = data['name']
+    description = data['description']
+    price = data['price']
+    image = data['image']
+    db.add_product(name, description, price, image, category_id)
+    await callback_query.message.answer("Maxsulot qo'shildi")
+    await state.clear()
+
+
 
 async def main():
     await dp.start_polling(bot)
