@@ -71,5 +71,14 @@ class Database:
         INSERT INTO products (name, description, price, image, category_id)
         VALUES (?, ?, ?, ?, ?)""", (name, description, price, image, category_id))
         self.connection.commit()
+
+    def get_products(self, category_id):
+        self.cursor.execute('''SELECT * FROM products WHERE category_id = ?;''', (category_id,))
+        return self.cursor.fetchall()
+
+
+    def get_product(self, product_id):
+        self.cursor.execute('''SELECT * FROM products WHERE id = ?;''', (product_id,))
+        return self.cursor.fetchone()
     
 

@@ -12,3 +12,7 @@ class AddProductState(StatesGroup):
     price = State()
     image = State()
     category = State()
+
+class GetProductState(StatesGroup):
+    category = State()
+    product = State()
