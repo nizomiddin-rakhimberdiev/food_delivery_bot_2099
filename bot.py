@@ -6,12 +6,29 @@ from states import RegisterState, AddCategoryState, AddProductState, GetProductS
 from default_keyboards import phone_btn, menu_keyboard, admin_keyboard
 from inline_keyboards import get_categories_btn, get_products_btn
 
-bot = Bot(token='6910861045:AAHv4cNziEbEa-VkgvJRmr3Qr59JNzXfjAQ')
+bot = Bot(token='6514890915:AAFmrEJNu-1gW_40yBUw4hYUaQjbJ675v2E')
 
 dp = Dispatcher()
 db = Database()
 
 SUPER_ADMIN_ID = 726130790
+
+from aiogram import Bot
+import os
+
+
+async def download_photo(file_id: str, bot: Bot, save_dir: str = "images") -> str:
+    file = await bot.get_file(file_id)
+    file_path = file.file_path
+    file_name = file_path.split("/")[-1]
+
+    # Saqlash papkasini yaratish
+    os.makedirs(save_dir, exist_ok=True)
+
+    destination = os.path.join(save_dir, file_name)
+
+    await bot.download_file(file_path, destination)
+    return destination  # Bu path ni bazaga saqlaysiz
 
 
 @dp.message(F.text == '/start')
@@ -105,7 +122,8 @@ async def product_price_handler(message: types.Message, state: FSMContext):
 
 @dp.message(AddProductState.image)
 async def product_photo_handler(message: types.Message, state: FSMContext):
-    photo = message.photo[-1].file_id
+    file_id = message.photo[-1].file_id
+    photo = await download_photo(file_id, bot)
     await state.update_data(image=photo)
     await message.answer("Maxsulot kategoriyasini tanlng: ", reply_markup=get_categories_btn())
     await state.set_state(AddProductState.category)
@@ -147,7 +165,8 @@ async def category_callback_handler(callback_query: types.CallbackQuery, state: 
 async def product_callback_handler(callback_query: types.CallbackQuery, state: FSMContext):
     product_id = callback_query.data.split('_')[1]
     product = db.get_product(product_id)
-    image = product[5]
+    image_path = product[5]
+    image = types.FSInputFile(image_path)
     name = product[1]
     description = product[2]
     price = product[3]
