@@ -12,7 +12,7 @@ phone_btn = ReplyKeyboardMarkup(
 menu_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📋 Menu"), KeyboardButton(text="🛍 Buyurtmalarim")],
-        [KeyboardButton(text="⚙️ Sozlamalar")],
+        [KeyboardButton(text="🛒 Savatcha")],[KeyboardButton(text="⚙️ Sozlamalar")],
     ],
     resize_keyboard=True
 )

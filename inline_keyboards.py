@@ -33,3 +33,16 @@ def get_products_btn(category_id):
             )
         builder.adjust(2)  # Har bir qatorda 2 ta tugma
         return builder.as_markup()
+
+
+def add_to_cart_btn(product_id: int, count: int):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="➖", callback_data=f"minus_count"),
+            InlineKeyboardButton(text=str(count), callback_data=f"count_{product_id}"),
+            InlineKeyboardButton(text="➕", callback_data=f"plus_count"),
+        ],
+        [
+            InlineKeyboardButton(text="🛒 Savatga qo'shish", callback_data=f"add_to_cart:{product_id}")
+        ]
+    ])

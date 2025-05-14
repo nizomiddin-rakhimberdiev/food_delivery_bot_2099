@@ -4,7 +4,7 @@ from database import Database
 from aiogram.fsm.context import FSMContext
 from states import RegisterState, AddCategoryState, AddProductState, GetProductState
 from default_keyboards import phone_btn, menu_keyboard, admin_keyboard
-from inline_keyboards import get_categories_btn, get_products_btn
+from inline_keyboards import get_categories_btn, get_products_btn, add_to_cart_btn
 
 bot = Bot(token='6514890915:AAFmrEJNu-1gW_40yBUw4hYUaQjbJ675v2E')
 
@@ -165,6 +165,7 @@ async def category_callback_handler(callback_query: types.CallbackQuery, state: 
 async def product_callback_handler(callback_query: types.CallbackQuery, state: FSMContext):
     product_id = callback_query.data.split('_')[1]
     product = db.get_product(product_id)
+    product_id = product[0]
     image_path = product[5]
     image = types.FSInputFile(image_path)
     name = product[1]
@@ -172,13 +173,63 @@ async def product_callback_handler(callback_query: types.CallbackQuery, state: F
     price = product[3]
     status = product[4]
     text = f"{name}\n\n{description}\n\nNarxi: {price} so'm"
-    await callback_query.message.answer_photo(photo=image, caption=text)
+    await callback_query.message.answer_photo(photo=image, caption=text, reply_markup=add_to_cart_btn(product_id, 1))
     await state.clear()
 
+@dp.callback_query(F.data == 'plus_count')
+async def plus_count_handler(callback_query: types.CallbackQuery):
+    print("Plus bosildi")
+    product_id = callback_query.message.reply_markup.inline_keyboard[0][1].callback_data.split("_")[1]
+    print(product_id)
+    count = int(callback_query.message.reply_markup.inline_keyboard[0][1].text)
+    count += 1
+    await callback_query.message.edit_reply_markup(reply_markup=add_to_cart_btn(product_id, count))
 
+
+@dp.callback_query(F.data == 'minus_count')
+async def minus_count_handler(callback_query: types.CallbackQuery):
+    print("Minus bosildi")
+    product_id = callback_query.message.reply_markup.inline_keyboard[0][1].callback_data.split("_")[1]
+    count = int(callback_query.message.reply_markup.inline_keyboard[0][1].text)
+    if count > 1:
+        count -= 1
+        await callback_query.message.edit_reply_markup(reply_markup=add_to_cart_btn(product_id, count))
+    else:
+        await callback_query.answer("Soni 1 dan kam bo'lishi mumkin emas!")
+        
+@dp.callback_query(F.data.startswith('add_to_cart'))
+async def add_to_cart_handler(callback_query: types.CallbackQuery):
+    product_id = int(callback_query.data.split(":")[1])
+    user_id = callback_query.from_user.id
+    count = int(callback_query.message.reply_markup.inline_keyboard[0][1].text)
+    product = db.get_product(product_id)
+    print(product)
+    price = product[3]
+    db.add_to_cart(product_id, user_id, count, price)
+    await callback_query.answer("Maxsulot savatchaga qo'shildi!")
+
+@dp.message(F.text == '🛒 Savatcha')
+async def cart_handler(message: types.Message):
+    user_id = message.from_user.id
+    cart_data = db.get_cart_data(user_id)
+    total_price = 15000
+    if cart_data:
+        text = "Savatchangizdagi maxsulotlar:\n"
+        for item in cart_data:
+            product = db.get_product(item[2])
+            total_price += item[4]
+            text += f"{product[1]} - {item[3]} dona. Jami: {item[4]} so'm\n"
+        text += f"\nYetkazib berish: 15000 so'm\n\nJami Narxi: {total_price} so'm\n"
+        await message.answer(text)
+    else:
+        await message.answer("Savatchangiz bo'sh.")
+
+async def start_bot():
+        await bot.send_message(SUPER_ADMIN_ID, text="Bot ishga tushdi")
 
 
 async def main():
+    await start_bot()
     await dp.start_polling(bot)
 
 

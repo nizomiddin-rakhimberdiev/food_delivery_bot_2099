@@ -34,6 +34,17 @@ class Database:
                 FOREIGN KEY (category_id) REFERENCES categories(id)                 
             );
         ''')
+        self.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS cart (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id VARCHAR(20),
+            product_id INTEGER,
+            count INTEGER DEFAULT 1,
+            total_price INTEGER,
+            FOREIGN KEY (user_id) REFERENCES users(user_id),
+            FOREIGN KEY (product_id) REFERENCES products(id)
+        );
+        ''')
         self.connection.commit()
     def add_user (self, user_id, phone):
         try:
@@ -81,4 +92,12 @@ class Database:
         self.cursor.execute('''SELECT * FROM products WHERE id = ?;''', (product_id,))
         return self.cursor.fetchone()
     
+    def add_to_cart(self, product_id, user_id, count, price):
+        total_price = int(count) * int(price)
+        self.cursor.execute('''INSERT INTO cart (product_id, user_id, count, total_price) VALUES (?, ?, ?, ?);''', (product_id, user_id, count, total_price))
+        self.connection.commit()
+        
+    def get_cart_data(self, user_id):
+        self.cursor.execute('''SELECT * FROM cart WHERE user_id = ?;''', (user_id,))
+        return self.cursor.fetchall()
 
