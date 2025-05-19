@@ -16,3 +16,7 @@ class AddProductState(StatesGroup):
 class GetProductState(StatesGroup):
     category = State()
     product = State()
+
+class CreateOrderState(StatesGroup):
+    address = State()
+    phone = State()

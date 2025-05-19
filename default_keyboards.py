@@ -29,3 +29,12 @@ admin_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=True
 )
+
+location_btn = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text="📍 Manzilni yuboring", request_location=True),
+        ]
+    ],
+    resize_keyboard=True
+)

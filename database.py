@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 class Database:
     def __init__(self):
@@ -45,6 +46,22 @@ class Database:
             FOREIGN KEY (product_id) REFERENCES products(id)
         );
         ''')
+
+        self.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id VARCHAR(20),
+            products TEXT,
+            total_price INTEGER,
+            status TEXT DEFAULT 'pending',
+            address TEXT,
+            old_phone VARCHAR(20),
+            new_phone VARCHAR(20),
+            created_at TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );
+        ''')
+
         self.connection.commit()
     def add_user (self, user_id, phone):
         try:
@@ -101,3 +118,34 @@ class Database:
         self.cursor.execute('''SELECT * FROM cart WHERE user_id = ?;''', (user_id,))
         return self.cursor.fetchall()
 
+    def create_order(self, user_id, address, phone):
+        cart_data = self.get_cart_data(user_id)
+        products = ""
+        total_price = 0
+        for cart in cart_data:
+            product_id = cart[2]
+            count = cart[3]
+            total_price += cart[4]
+            self.cursor.execute('''SELECT * FROM products WHERE id = ?;''', (product_id,))
+            product = self.cursor.fetchone()
+            products += f"{product[1]} - {count} x : {cart[4]} so'm\n"
+
+        user = self.cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
+        old_phone = user[2]
+        new_phone = phone
+        created_at = datetime.datetime.now()
+        total_price += 15000
+        self.cursor.execute('''INSERT INTO orders (user_id, products, total_price, address, old_phone, new_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?);''', (user_id, products, total_price, address, old_phone, new_phone, created_at))
+        self.connection.commit()
+
+    def clear_cart(self, user_id):
+        self.cursor.execute('''DELETE FROM cart WHERE user_id = ?;''', (user_id,))
+        self.connection.commit()
+
+
+    def delete_table(self):
+        self.cursor.execute('''DROP TABLE IF EXISTS orders;''')
+        self.connection.commit()
+
+db = Database()
+# db.delete_table()

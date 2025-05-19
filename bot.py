@@ -2,11 +2,14 @@ from aiogram import Bot, Dispatcher, types, F
 import asyncio
 from database import Database
 from aiogram.fsm.context import FSMContext
-from states import RegisterState, AddCategoryState, AddProductState, GetProductState
-from default_keyboards import phone_btn, menu_keyboard, admin_keyboard
-from inline_keyboards import get_categories_btn, get_products_btn, add_to_cart_btn
+from states import RegisterState, AddCategoryState, AddProductState, GetProductState, CreateOrderState
+from default_keyboards import phone_btn, menu_keyboard, admin_keyboard, location_btn
+from inline_keyboards import get_categories_btn, get_products_btn, add_to_cart_btn, create_order_button
+from geopy.geocoders import Nominatim
 
-bot = Bot(token='6514890915:AAFmrEJNu-1gW_40yBUw4hYUaQjbJ675v2E')
+geolocator = Nominatim(user_agent="726130790")
+
+bot = Bot(token='6514890915:AAFqppbIr0zur8BjdgvTQuG_3oh86uBXuB8')
 
 dp = Dispatcher()
 db = Database()
@@ -34,6 +37,7 @@ async def download_photo(file_id: str, bot: Bot, save_dir: str = "images") -> st
 @dp.message(F.text == '/start')
 async def start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
+
     user = db.check_user(user_id)
     if user:
         await message.answer('Hello, Welcome to delivery bot!', reply_markup=menu_keyboard)
@@ -220,9 +224,38 @@ async def cart_handler(message: types.Message):
             total_price += item[4]
             text += f"{product[1]} - {item[3]} dona. Jami: {item[4]} so'm\n"
         text += f"\nYetkazib berish: 15000 so'm\n\nJami Narxi: {total_price} so'm\n"
-        await message.answer(text)
+        await message.answer(text, reply_markup=create_order_button)
     else:
         await message.answer("Savatchangiz bo'sh.")
+
+@dp.callback_query(F.data == 'create_order')
+async def create_order_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    message_id = callback_query.message.message_id
+    await bot.delete_message(chat_id=callback_query.from_user.id, message_id=message_id)
+    await callback_query.message.answer("Iltimos manzilni yuboring: ", reply_markup=location_btn)
+    await state.set_state(CreateOrderState.address)
+
+@dp.message(CreateOrderState.address, F.location)
+async def address_handler(message: types.Message, state: FSMContext):
+    address_lat = message.location.latitude
+    address_lon = message.location.longitude
+    print(address_lat, address_lon)
+    location = geolocator.reverse((address_lat, address_lon), language='uz')
+    print(location.address)
+    await state.update_data(address=location.address)
+    await message.answer("Iltimos telefon raqamingizni yuboring: ")
+    await state.set_state(CreateOrderState.phone)
+
+@dp.message(CreateOrderState.phone)
+async def phone_handler(message: types.Message, state: FSMContext):
+    phone = message.text
+    data = await state.get_data()
+    address = data['address']
+    db.create_order(message.from_user.id, address, phone)
+    await message.answer("Buyurtmangiz qabul qilindi. Tez orada yetkazib beramiz.")
+    db.clear_cart(message.from_user.id)
+    await state.clear()
+
 
 async def start_bot():
         await bot.send_message(SUPER_ADMIN_ID, text="Bot ishga tushdi")
