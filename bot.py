@@ -2,9 +2,9 @@ from aiogram import Bot, Dispatcher, types, F
 import asyncio
 from database import Database
 from aiogram.fsm.context import FSMContext
-from states import RegisterState, AddCategoryState, AddProductState, GetProductState, CreateOrderState
+from states import RegisterState, AddCategoryState, AddProductState, GetProductState, CreateOrderState, AddAdvertState
 from default_keyboards import phone_btn, menu_keyboard, admin_keyboard, location_btn
-from inline_keyboards import get_categories_btn, get_products_btn, add_to_cart_btn, create_order_button
+from inline_keyboards import get_categories_btn, get_products_btn, add_to_cart_btn, create_order_button, resend_btn
 from geopy.geocoders import Nominatim
 
 geolocator = Nominatim(user_agent="726130790")
@@ -256,6 +256,55 @@ async def phone_handler(message: types.Message, state: FSMContext):
     db.clear_cart(message.from_user.id)
     await state.clear()
 
+@dp.message(F.text == '🛍 add advert')
+async def add_advert_handler(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    if user_id == SUPER_ADMIN_ID or db.check_admin(user_id):
+        await message.answer("Iltimos reklama rasmni yuboring: ")
+        await state.set_state(AddAdvertState.image)
+    else:
+        return 
+    
+@dp.message(AddAdvertState.image, F.photo)
+async def advert_image_handler(message: types.Message, state: FSMContext):
+    file_id = message.photo[-1].file_id
+    await state.update_data(image=file_id)
+    await message.answer("Iltimos reklama matnini kiriting: ")
+    await state.set_state(AddAdvertState.content)
+
+@dp.message(AddAdvertState.content)
+async def advert_content_handler(message: types.Message, state: FSMContext):
+    content = message.text
+    data = await state.get_data()
+    image_file_id = data['image']
+    for user in db.get_all_users_user_id():
+        try:
+            if user == str(SUPER_ADMIN_ID) or db.check_admin(user):
+                await bot.send_photo(chat_id=user, photo=image_file_id, caption=content, reply_markup=resend_btn(message_id=message.message_id))
+            else:
+                await bot.send_photo(chat_id=user, photo=image_file_id, caption=content)
+        except Exception as e:
+            print(f"Error sending advert to user {user}: {e}")
+    await message.answer("Reklama muvaffaqiyatli yuborildi!", reply_markup=admin_keyboard)
+    await state.clear()
+
+@dp.callback_query(F.data.startswith('resend_advert'))
+async def resend_advert_handler(callback_query: types.CallbackQuery):
+    message_id = callback_query.data.split(':')[1]
+    user_id = callback_query.from_user.id
+    advert_message = await bot.get_message(chat_id=user_id, message_id=message_id)
+    if advert_message:
+        try:
+            for user in db.get_all_users_user_id():
+                if user == str(SUPER_ADMIN_ID) or db.check_admin(user):
+                    await bot.send_photo(chat_id=user, photo=advert_message.photo[-1].file_id, caption=advert_message.caption, reply_markup=resend_btn(message_id=message_id))
+                else:
+                    await bot.send_photo(chat_id=user_id, photo=advert_message.photo[-1].file_id, caption=advert_message.caption)
+            await callback_query.answer("Reklama qayta yuborildi!")
+        except Exception as e:
+            await callback_query.answer(f"Reklama yuborishda xatolik: {e}")
+    else:
+        await callback_query.answer("Reklama topilmadi.")
 
 async def start_bot():
         await bot.send_message(SUPER_ADMIN_ID, text="Bot ishga tushdi")

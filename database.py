@@ -142,6 +142,10 @@ class Database:
         self.cursor.execute('''DELETE FROM cart WHERE user_id = ?;''', (user_id,))
         self.connection.commit()
 
+    def get_all_users_user_id(self):
+        data = self.cursor.execute('''SELECT user_id FROM users;''').fetchall()
+        user_ids = [row[0] for row in data]
+        return user_ids
 
     def delete_table(self):
         self.cursor.execute('''DROP TABLE IF EXISTS orders;''')
@@ -149,3 +153,4 @@ class Database:
 
 db = Database()
 # db.delete_table()
+print(db.get_all_users_user_id())

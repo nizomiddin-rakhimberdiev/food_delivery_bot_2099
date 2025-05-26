@@ -20,3 +20,8 @@ class GetProductState(StatesGroup):
 class CreateOrderState(StatesGroup):
     address = State()
     phone = State()
+
+
+class AddAdvertState(StatesGroup):
+    image = State()
+    content = State()

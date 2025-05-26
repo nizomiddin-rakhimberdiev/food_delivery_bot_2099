@@ -54,3 +54,13 @@ create_order_button = InlineKeyboardMarkup(
         ]
     ]
 )
+
+def resend_btn(message_id):
+    return InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔄 Qayta yuborish", callback_data="resend_advert:{message_id}")
+        ]
+    ]
+)
+    
