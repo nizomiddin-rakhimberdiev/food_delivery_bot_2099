@@ -61,6 +61,14 @@ class Database:
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         );
         ''')
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS adverts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_id VARCHAR(20) NOT NULL UNIQUE,
+                image TEXT NOT NULL,
+                caption TEXT NOT NULL
+            );
+        """)
 
         self.connection.commit()
     def add_user (self, user_id, phone):
@@ -150,6 +158,17 @@ class Database:
     def delete_table(self):
         self.cursor.execute('''DROP TABLE IF EXISTS orders;''')
         self.connection.commit()
+
+    def add_advert(self, message_id, image, caption):
+        try:
+            self.cursor.execute('''INSERT INTO adverts (message_id, image, caption) VALUES (?, ?, ?);''', (message_id, image, caption))
+            self.connection.commit()
+        except sqlite3.IntegrityError:
+            print(f"Advert with message_id {message_id} already exists in the database.")
+
+    def get_advert(self, message_id):
+        self.cursor.execute('''SELECT * FROM adverts WHERE message_id = ?;''', (message_id,))
+        return self.cursor.fetchone()
 
 db = Database()
 # db.delete_table()

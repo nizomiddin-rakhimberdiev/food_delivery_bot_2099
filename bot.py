@@ -268,7 +268,9 @@ async def add_advert_handler(message: types.Message, state: FSMContext):
 @dp.message(AddAdvertState.image, F.photo)
 async def advert_image_handler(message: types.Message, state: FSMContext):
     file_id = message.photo[-1].file_id
-    await state.update_data(image=file_id)
+    # Rasmni yuklab olish va saqlash
+    image_path = await download_photo(file_id, bot)
+    await state.update_data(image=image_path)
     await message.answer("Iltimos reklama matnini kiriting: ")
     await state.set_state(AddAdvertState.content)
 
@@ -276,13 +278,17 @@ async def advert_image_handler(message: types.Message, state: FSMContext):
 async def advert_content_handler(message: types.Message, state: FSMContext):
     content = message.text
     data = await state.get_data()
-    image_file_id = data['image']
+    image_path = data['image']
     for user in db.get_all_users_user_id():
+        print(user)
         try:
             if user == str(SUPER_ADMIN_ID) or db.check_admin(user):
-                await bot.send_photo(chat_id=user, photo=image_file_id, caption=content, reply_markup=resend_btn(message_id=message.message_id))
+                await bot.send_photo(chat_id=int(user), photo=types.FSInputFile(image_path), caption=content, reply_markup=resend_btn(message_id=message.message_id))
+                print(message.message_id)
+                print(message.message_thread_id)
+                db.add_advert(message_id=message.message_id, image=image_path, caption=content)
             else:
-                await bot.send_photo(chat_id=user, photo=image_file_id, caption=content)
+                await bot.send_photo(chat_id=int(user), photo=types.FSInputFile(image_path), caption=content)
         except Exception as e:
             print(f"Error sending advert to user {user}: {e}")
     await message.answer("Reklama muvaffaqiyatli yuborildi!", reply_markup=admin_keyboard)
@@ -291,18 +297,19 @@ async def advert_content_handler(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data.startswith('resend_advert'))
 async def resend_advert_handler(callback_query: types.CallbackQuery):
     message_id = callback_query.data.split(':')[1]
-    user_id = callback_query.from_user.id
-    advert_message = await bot.get_message(chat_id=user_id, message_id=message_id)
-    if advert_message:
-        try:
-            for user in db.get_all_users_user_id():
-                if user == str(SUPER_ADMIN_ID) or db.check_admin(user):
-                    await bot.send_photo(chat_id=user, photo=advert_message.photo[-1].file_id, caption=advert_message.caption, reply_markup=resend_btn(message_id=message_id))
-                else:
-                    await bot.send_photo(chat_id=user_id, photo=advert_message.photo[-1].file_id, caption=advert_message.caption)
-            await callback_query.answer("Reklama qayta yuborildi!")
-        except Exception as e:
-            await callback_query.answer(f"Reklama yuborishda xatolik: {e}")
+    print(message_id)
+    advert = db.get_advert(message_id)
+    print(advert)
+    if advert:
+        image_path = advert[2]
+        caption = advert[3]
+        for user in db.get_all_users_user_id():
+            print(user)
+            try:
+                await bot.send_photo(chat_id=user, photo=types.FSInputFile(image_path), caption=caption)
+            except Exception as e:
+                print(f"Error resending advert to user {user}: {e}")
+        await callback_query.answer("Reklama qayta yuborildi!")
     else:
         await callback_query.answer("Reklama topilmadi.")
 
